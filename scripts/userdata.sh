@@ -9,9 +9,8 @@
 MC_VERSION="1.21.11"
 FABRIC_INSTALLER_VERSION="1.0.1"
 SERVER_DIR="/root/minecraft"
-SCRIPTS_REPO="https://raw.githubusercontent.com/IanLeung12/minecraft-server/main"
+REPO="https://raw.githubusercontent.com/IanLeung12/lockoutserver/main"
 
-MODS_REPO="https://github.com/IanLeung12/lockoutmods/raw/main"
 MODS=(
     "fabric-api-0.141.3+1.21.11.jar"
     "lithium-fabric-0.21.4+mc1.21.11.jar"
@@ -64,7 +63,7 @@ mkdir -p mods
 for MOD in "${MODS[@]}"; do
     ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$MOD', safe=''))")
     echo "[$(date)] Downloading $MOD..."
-    wget "${MODS_REPO}/${ENCODED}" -O "mods/${MOD}"
+    wget "${REPO}/mods/${ENCODED}" -O "mods/${MOD}"
 done
 echo "[$(date)] All mods downloaded."
 
@@ -72,8 +71,8 @@ echo "[$(date)] All mods downloaded."
 # 6. Download scripts from GitHub
 # =============================================================================
 echo "[$(date)] Downloading scripts..."
-wget "${SCRIPTS_REPO}/start.sh" -O "$SERVER_DIR/start.sh"
-wget "${SCRIPTS_REPO}/newworld.sh" -O "$SERVER_DIR/newworld.sh"
+wget "${REPO}/scripts/start.sh" -O "$SERVER_DIR/start.sh"
+wget "${REPO}/scripts/newworld.sh" -O "$SERVER_DIR/newworld.sh"
 chmod +x "$SERVER_DIR/start.sh" "$SERVER_DIR/newworld.sh"
 echo "[$(date)] Scripts downloaded."
 
