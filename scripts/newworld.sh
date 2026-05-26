@@ -20,32 +20,47 @@ NC='\033[0m'
 
 cd "$SERVER_DIR"
 
+is_server_running() {
+    pgrep -f "$JAR" > /dev/null 2>&1
+}
+
+is_screen_running() {
+    screen -list | grep -q "\.${SCREEN_NAME}"
+}
+
 # =============================================================================
 # 1. Check server is running
 # =============================================================================
-if ! screen -list | grep -q "\.${SCREEN_NAME}"; then
+if ! is_server_running && ! is_screen_running; then
     echo -e "${YELLOW}[WARN] Server is not running. Starting fresh world anyway...${NC}"
 else
     # =============================================================================
     # 2. Stop the server gracefully
     # =============================================================================
     echo -e "${GREEN}==>${NC} Stopping server..."
-    screen -S "$SCREEN_NAME" -X stuff "say Server restarting for a new world in 5 seconds...$(printf '\r')"
-    sleep 5
-    screen -S "$SCREEN_NAME" -X stuff "stop$(printf '\r')"
+    if is_screen_running; then
+        screen -S "$SCREEN_NAME" -X stuff "say Server restarting for a new world in 5 seconds...$(printf '\r')"
+        sleep 5
+        screen -S "$SCREEN_NAME" -X stuff "stop$(printf '\r')"
+    fi
 
-    # Wait for screen session to close
+    # Wait for the Java process to stop (more reliable than watching screen)
     echo -e "${GREEN}==>${NC} Waiting for server to stop..."
-    for i in {1..30}; do
-        if ! screen -list | grep -q "\.${SCREEN_NAME}"; then
+    for i in {1..60}; do
+        if ! is_server_running; then
             break
         fi
         sleep 1
     done
 
-    if screen -list | grep -q "\.${SCREEN_NAME}"; then
-        echo -e "${RED}[ERROR] Server didn't stop in time. Kill it manually with: screen -S ${SCREEN_NAME} -X quit${NC}"
+    if is_server_running; then
+        echo -e "${RED}[ERROR] Server didn't stop in time. Kill it manually with: kill \$(pgrep -f ${JAR})${NC}"
         exit 1
+    fi
+
+    # Clean up the screen session if it's still lingering
+    if is_screen_running; then
+        screen -S "$SCREEN_NAME" -X quit
     fi
 fi
 
@@ -60,9 +75,8 @@ if [ -d "world" ]; then
     BACKUP_NAME="world_${TIMESTAMP}"
     echo -e "${GREEN}==>${NC} Archiving current world to ${BACKUP_NAME}..."
     mv world "$BACKUP_NAME"
-    # Archive the nether and end dimensions too if they exist
-    [ -d "world_nether" ]    && mv world_nether    "${BACKUP_NAME}_nether"
-    [ -d "world_the_end" ]   && mv world_the_end   "${BACKUP_NAME}_the_end"
+    [ -d "world_nether" ]  && mv world_nether  "${BACKUP_NAME}_nether"
+    [ -d "world_the_end" ] && mv world_the_end "${BACKUP_NAME}_the_end"
     echo -e "${GREEN}[OK] World archived as ${BACKUP_NAME}.${NC}"
 else
     echo -e "${YELLOW}[WARN] No existing world folder found. Starting fresh.${NC}"
@@ -75,7 +89,7 @@ echo -e "${GREEN}==>${NC} Starting server with new world..."
 screen -S "$SCREEN_NAME" -dm bash -c "java -Xmx${RAM} -Xms${RAM} -jar ${JAR} nogui; echo 'Server stopped. Press Enter to close.'; read"
 
 sleep 2
-if screen -list | grep -q "\.${SCREEN_NAME}"; then
+if is_screen_running; then
     echo -e "${GREEN}[OK] Server started with a fresh world!${NC}"
     echo -e "${GREEN}     Attach: screen -r ${SCREEN_NAME}${NC}"
 else
