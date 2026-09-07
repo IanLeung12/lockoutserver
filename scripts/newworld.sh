@@ -5,7 +5,7 @@
 # Archives the current world and restarts the server with a fresh one.
 # =============================================================================
 
-SERVER_DIR="/root/minecraft"
+SERVER_DIR="/home/ubuntu/minecraft"
 SCREEN_NAME="mc"
 JAR="fabric-server-launch.jar"
 # Use all available RAM minus 1GB for the OS

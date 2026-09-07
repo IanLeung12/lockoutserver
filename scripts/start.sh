@@ -4,7 +4,7 @@
 # Minecraft 1.21.11 Fabric Server Startup Script
 # =============================================================================
 
-SERVER_DIR="/root/minecraft"
+SERVER_DIR="/home/ubuntu/minecraft"
 JAR="fabric-server-launch.jar"
 # Use all available RAM minus 1GB for the OS
 TOTAL_MB=$(free -m | awk '/^Mem:/ {print $2}')

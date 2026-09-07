@@ -1,6 +1,6 @@
 # lockoutserver
 
-Automated setup for a Minecraft 1.21.11 Fabric server on DigitalOcean.
+Automated setup for a Minecraft 1.21.11 Fabric server on AWS EC2.
 
 ## Repo Structure
 
@@ -11,9 +11,9 @@ lockoutserver/
 │   ├── lithium-fabric-0.21.4+mc1.21.11.jar
 │   └── lockout-fabric-0.12.2.jar
 ├── scripts/
+│   ├── userdata.sh    # paste into EC2 "User data" at launch
 │   ├── start.sh       # start the server
 │   └── newworld.sh    # archive current world and generate a new one
-├── userdata.sh        # paste into DigitalOcean on droplet creation
 └── README.md
 ```
 
@@ -21,28 +21,37 @@ lockoutserver/
 
 ## Creating a New Server
 
-### 1. Create a Droplet
-- **Region:** Toronto (TOR1)
-- **Image:** Ubuntu 24.04 LTS
-- **Size:** 2 vCPU / 4 GB RAM (small group) or 4 vCPU / 8 GB RAM
-- **Advanced Options → Add Initialization scripts:** paste the contents of `userdata.sh`
-- Click **Create Droplet**
+### 1. Launch an EC2 Instance
+- **Region:** `ca-central-1` (Canada) or whichever is closest to your players
+- **AMI:** Ubuntu Server 24.04 LTS (64-bit x86)
+- **Instance type:** `t3.medium` (2 vCPU / 4 GB, small group) or `t3.large` (2 vCPU / 8 GB)
+- **Key pair:** select or create one — you need it to SSH in
+- **Network settings → Edit → Add security group rule:**
+  - Type `Custom TCP`, Port `25565`, Source `0.0.0.0/0` (so your friends can connect)
+  - Keep the default SSH rule on port 22
+- **Configure storage:** 20 GB gp3 (the default 8 GB fills up fast with worlds)
+- **Advanced details → User data:** paste the contents of `scripts/userdata.sh`
+- Click **Launch instance**
 
-The droplet will automatically install Java, download Fabric, pull the mods and scripts from this repo, and be ready to go by the time it finishes booting (~3–5 min).
+The instance will automatically install Java, download Fabric, pull the mods and scripts from this repo, and be ready to go by the time it finishes booting (~3–5 min).
 
 ### 2. Check Setup Completed
 ```bash
-ssh root@<YOUR_SERVER_IP>
+ssh -i <YOUR_KEY>.pem ubuntu@<YOUR_PUBLIC_IP>
+```
+```bash
 tail -f /var/log/mc-setup.log
 ```
-The last line will read `Setup complete!` when finished.
+The last line will read `Setup complete!` when finished. If a mod fails to download or arrives corrupt, setup stops there and the log says which one.
 
 ### 3. Start the Server
 ```bash
-bash /root/minecraft/start.sh
+bash /home/ubuntu/minecraft/start.sh
 ```
 
 RAM is allocated automatically (total RAM minus 1 GB reserved for the OS).
+
+Players connect to the instance's **public IPv4 address** on the default port. Note that this address changes every time the instance is stopped and started — attach an Elastic IP if you want it to stay put.
 
 ---
 
@@ -50,18 +59,18 @@ RAM is allocated automatically (total RAM minus 1 GB reserved for the OS).
 
 | Action | Command |
 |---|---|
-| Start server | `bash /root/minecraft/start.sh` |
+| Start server | `bash /home/ubuntu/minecraft/start.sh` |
 | Attach to console | `screen -r mc` |
 | Detach from console | `Ctrl + A` then `D` |
 | Stop server safely | Attach, then type `stop` |
-| New world | `bash /root/minecraft/newworld.sh` |
+| New world | `bash /home/ubuntu/minecraft/newworld.sh` |
 
 ---
 
 ## Starting a New World
 
 ```bash
-bash /root/minecraft/newworld.sh
+bash /home/ubuntu/minecraft/newworld.sh
 ```
 
 This will:
@@ -83,12 +92,12 @@ Old worlds are kept on the server and never deleted automatically.
 
 ## Teardown (Stop Billing)
 
-Go to **DigitalOcean Dashboard → Droplets → Destroy → Destroy Droplet**.
+Go to **EC2 Console → Instances → select the instance → Instance state → Terminate instance**.
 
-> Closing your terminal or stopping the Minecraft process does **not** stop billing. You must destroy the droplet.
+> Closing your terminal or stopping the Minecraft process does **not** stop billing. **Stopping** the instance halts compute charges but you still pay for the EBS volume; **terminating** it stops everything and deletes the world. Copy off any worlds you want to keep first.
 
 ---
 
 ## Updating Mods or Scripts
 
-Push new files to this repo — every new droplet created after that will automatically get the latest versions via `userdata.sh`.
+Push new files to this repo — every new instance launched after that will automatically get the latest versions via `scripts/userdata.sh`.

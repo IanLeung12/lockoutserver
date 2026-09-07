@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # =============================================================================
-# Minecraft 1.21.11 Fabric Server — DigitalOcean User Data Script
-# Paste this into the "User Data" field when creating a Droplet.
-# Everything including mods will be ready by the time the droplet boots.
+# Minecraft 1.21.11 Fabric Server — AWS EC2 User Data Script
+# Paste this into "Advanced details -> User data" when launching an instance.
+# Everything including mods will be ready by the time the instance boots.
 # =============================================================================
 
 MC_VERSION="1.21.11"
 FABRIC_INSTALLER_VERSION="1.0.1"
-SERVER_DIR="/root/minecraft"
+SERVER_USER="ubuntu"
+SERVER_DIR="/home/${SERVER_USER}/minecraft"
 REPO="https://raw.githubusercontent.com/IanLeung12/lockoutserver/main"
 
 MODS=(
@@ -30,12 +31,12 @@ echo "[$(date)] Starting Minecraft server setup..."
 # =============================================================================
 echo "[$(date)] Installing dependencies..."
 apt update && apt upgrade -y -o Dpkg::Options::="--force-confold"
-apt install openjdk-21-jre-headless screen wget -y
+apt install openjdk-21-jre-headless screen wget unzip -y
 
 # =============================================================================
 # 2. Create server directory
 # =============================================================================
-echo "[$(date)] Creating server directory..."
+echo "[$(date)] Creating server directory at ${SERVER_DIR}..."
 mkdir -p "$SERVER_DIR"
 cd "$SERVER_DIR"
 
@@ -58,14 +59,29 @@ echo "eula=true" > eula.txt
 # =============================================================================
 # 5. Download mods from GitHub
 # =============================================================================
+# GitHub serves the raw path verbatim, so filenames with '+' need no encoding.
+# Each jar is verified as a readable zip archive — a 404 or a truncated
+# download otherwise lands in mods/ as a file the server silently refuses.
 echo "[$(date)] Downloading mods..."
 mkdir -p mods
 for MOD in "${MODS[@]}"; do
-    ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$MOD', safe=''))")
     echo "[$(date)] Downloading $MOD..."
-    wget "${REPO}/mods/${ENCODED}" -O "mods/${MOD}"
+    if ! wget --tries=3 "${REPO}/mods/${MOD}" -O "mods/${MOD}"; then
+        echo "[$(date)] ERROR: failed to download ${MOD}."
+        rm -f "mods/${MOD}"
+        exit 1
+    fi
+
+    if ! unzip -tqq "mods/${MOD}" > /dev/null 2>&1; then
+        echo "[$(date)] ERROR: ${MOD} is not a valid jar (got $(wc -c < "mods/${MOD}") bytes)."
+        echo "[$(date)] First line of what was downloaded:"
+        head -c 200 "mods/${MOD}"
+        rm -f "mods/${MOD}"
+        exit 1
+    fi
+    echo "[$(date)] Verified ${MOD}."
 done
-echo "[$(date)] All mods downloaded."
+echo "[$(date)] All mods downloaded and verified."
 
 # =============================================================================
 # 6. Download scripts from GitHub
@@ -73,10 +89,22 @@ echo "[$(date)] All mods downloaded."
 echo "[$(date)] Downloading scripts..."
 wget "${REPO}/scripts/start.sh" -O "$SERVER_DIR/start.sh"
 wget "${REPO}/scripts/newworld.sh" -O "$SERVER_DIR/newworld.sh"
+
+# The scripts already default to this path; re-point them anyway so a custom
+# SERVER_DIR above stays consistent everywhere.
+sed -i "s|^SERVER_DIR=.*|SERVER_DIR=\"${SERVER_DIR}\"|" "$SERVER_DIR/start.sh" "$SERVER_DIR/newworld.sh"
 chmod +x "$SERVER_DIR/start.sh" "$SERVER_DIR/newworld.sh"
 echo "[$(date)] Scripts downloaded."
 
 # =============================================================================
-# 7. Done
+# 7. Hand the server over to the login user
 # =============================================================================
-echo "[$(date)] Setup complete! Run: bash /root/minecraft/start.sh"
+# User data runs as root, so everything above is root-owned. Without this the
+# ubuntu user can't write worlds, logs, or configs.
+echo "[$(date)] Setting ownership to ${SERVER_USER}..."
+chown -R "${SERVER_USER}:${SERVER_USER}" "$SERVER_DIR"
+
+# =============================================================================
+# 8. Done
+# =============================================================================
+echo "[$(date)] Setup complete! Run: bash ${SERVER_DIR}/start.sh"
