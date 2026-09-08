@@ -67,6 +67,19 @@ echo "[$(date)] Accepting EULA..."
 echo "eula=true" > eula.txt
 
 # =============================================================================
+# 4b. Default server.properties
+# =============================================================================
+# The server merges these into the full server.properties on first start.
+# view-distance is in chunks; 20 is generous and needs a non-burstable
+# instance with 8 GB+ (see README). simulation-distance stays at the
+# default 10 so far-away chunks are visible but don't tick.
+echo "[$(date)] Writing default server.properties..."
+cat > server.properties <<'PROPS'
+view-distance=20
+simulation-distance=10
+PROPS
+
+# =============================================================================
 # 5. Download mods from GitHub
 # =============================================================================
 # GitHub serves the raw path verbatim, so filenames with '+' need no encoding.

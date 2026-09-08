@@ -30,7 +30,10 @@ sharedhealth/
 ### 1. Launch an EC2 Instance
 - **Region:** `ca-central-1` (Canada) or whichever is closest to your players
 - **AMI:** Ubuntu Server 24.04 LTS (64-bit x86)
-- **Instance type:** `t3.medium` (2 vCPU / 4 GB, small group) or `t3.large` (2 vCPU / 8 GB)
+- **Instance type:** `c7i.xlarge` (4 vCPU / 8 GB) recommended. `m7i.large` (2 vCPU / 8 GB) is the budget option.
+  - **Avoid the `t3` family.** It is burstable: a `t3.medium` ran at ~95% CPU with a small group and, once its CPU credits run out, it gets throttled and the server starts lagging.
+  - Minecraft is mostly single-threaded, so a high clock speed matters more than core count. The `c7i`/`m7i` (Intel) or `c7a`/`m7a` (AMD) families are all fine.
+  - The default view distance is 20 chunks, which needs the 8 GB. If you drop to a 4 GB instance, lower `view-distance` in `server.properties` to 10–12.
 - **Key pair:** select or create one — you need it to SSH in
 - **Network settings → Edit → Add security group rule:**
   - Type `Custom TCP`, Port `25565`, Source `0.0.0.0/0` (so your friends can connect)
@@ -56,6 +59,8 @@ bash /home/ubuntu/minecraft/start.sh
 ```
 
 RAM is allocated automatically (total RAM minus 1 GB reserved for the OS).
+
+Default `server.properties` written at setup: `view-distance=20`, `simulation-distance=10`. Edit the file and restart the server to change them.
 
 Players connect to the instance's **public IPv4 address** on the default port. Note that this address changes every time the instance is stopped and started — attach an Elastic IP if you want it to stay put.
 
