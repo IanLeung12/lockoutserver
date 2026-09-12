@@ -60,7 +60,7 @@ bash /home/ubuntu/minecraft/start.sh
 
 RAM is allocated automatically (total RAM minus 1 GB reserved for the OS).
 
-Default `server.properties` written at setup: `view-distance=20`, `simulation-distance=10`. Edit the file and restart the server to change them.
+Default `server.properties` written at setup: `view-distance=20`, `simulation-distance=10`, `hardcore=true`, `difficulty=hard`. Edit the file and restart the server to change them.
 
 Players connect to the instance's **public IPv4 address** on the default port. Note that this address changes every time the instance is stopped and started — attach an Elastic IP if you want it to stay put.
 

@@ -73,10 +73,14 @@ echo "eula=true" > eula.txt
 # view-distance is in chunks; 20 is generous and needs a non-burstable
 # instance with 8 GB+ (see README). simulation-distance stays at the
 # default 10 so far-away chunks are visible but don't tick.
+# hardcore=true forces hard difficulty and permadeath; difficulty=hard is
+# set explicitly so it stays hard if hardcore is ever turned off.
 echo "[$(date)] Writing default server.properties..."
 cat > server.properties <<'PROPS'
 view-distance=20
 simulation-distance=10
+hardcore=true
+difficulty=hard
 PROPS
 
 # =============================================================================
