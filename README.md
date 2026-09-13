@@ -33,6 +33,7 @@ lockoutserver/
 - **Key pair:** select or create one — you need it to SSH in
 - **Network settings → Edit → Add security group rule:**
   - Type `Custom TCP`, Port `25565`, Source `0.0.0.0/0` (so your friends can connect)
+  - Type `Custom UDP`, Port `24454`, Source `0.0.0.0/0` (for the voice chat mod)
   - Keep the default SSH rule on port 22
 - **Configure storage:** 20 GB gp3 (the default 8 GB fills up fast with worlds)
 - **Advanced details → User data:** paste the contents of `scripts/userdata.sh`

@@ -16,6 +16,7 @@ MODS=(
     "fabric-api-0.141.3+1.21.11.jar"
     "lithium-fabric-0.21.4+mc1.21.11.jar"
     "lockout-fabric-0.12.2.jar"
+    "voicechat-fabric-1.21.11-2.6.22.jar"
 )
 
 # --- Logging — all output goes to /var/log/mc-setup.log ---
