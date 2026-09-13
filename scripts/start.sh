@@ -6,9 +6,9 @@
 
 SERVER_DIR="/home/ubuntu/minecraft"
 JAR="fabric-server-launch.jar"
-# Use all available RAM minus 1GB for the OS
+# Use all available RAM minus 2GB for the OS
 TOTAL_MB=$(free -m | awk '/^Mem:/ {print $2}')
-RAM_MB=$((TOTAL_MB - 1024))
+RAM_MB=$((TOTAL_MB - 2048))
 RAM="${RAM_MB}M"
 SCREEN_NAME="mc"
 
